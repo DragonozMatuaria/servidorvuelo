@@ -1,38 +1,30 @@
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const cors = require("cors");
+const WebSocket = require("ws");
+const server = new WebSocket.Server({ port: process.env.PORT || 3000 });
 
-const app = express();
-app.use(cors());
-const server = http.createServer(app);
-const io = new Server(server, {
-    cors: {
-        origin: "*", // permite acceso desde cualquier origen
-        methods: ["GET", "POST"]
+server.on("connection", (socket) => {
+  console.log("Cliente conectado");
+
+  socket.on("message", (data) => {
+    const msg = JSON.parse(data);
+    console.log("Mensaje recibido:", msg);
+
+    if (msg.type === "join") {
+      broadcast({ type: "nuevo-participante", nombre: msg.nombre });
+    } else if (msg.type === "mensaje") {
+      broadcast({ type: "nuevo-mensaje", nombre: msg.nombre, texto: msg.texto });
     }
+  });
+
+  socket.on("close", () => {
+    console.log("Cliente desconectado");
+  });
 });
 
-const PORT = process.env.PORT || 3000;
-
-io.on("connection", (socket) => {
-    console.log("Nuevo participante conectado:", socket.id);
-
-    socket.on("join", ({ nombre }) => {
-        console.log(`Se unió: ${nombre}`);
-        io.emit("nuevo-participante", { nombre });
-    });
-
-    socket.on("mensaje", ({ nombre, texto }) => {
-        console.log(`Mensaje de ${nombre}: ${texto}`);
-        io.emit("nuevo-mensaje", { nombre, texto });
-    });
-
-    socket.on("disconnect", () => {
-        console.log("Participante desconectado:", socket.id);
-    });
-});
-
-server.listen(PORT, () => {
-    console.log(`Servidor escuchando en puerto ${PORT}`);
-});
+function broadcast(data) {
+  const json = JSON.stringify(data);
+  server.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(json);
+    }
+  });
+}
