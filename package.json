@@ -1,15 +1,17 @@
 {
   "name": "servidor",
   "version": "1.0.0",
-  "description": "Servidor WebSocket para Unity",
-  "main": "server.js",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "ws": "^8.13.0"
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1"
   }
 }
