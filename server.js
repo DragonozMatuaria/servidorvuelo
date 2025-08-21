@@ -42,8 +42,28 @@ app.get("/mensajes", (req, res) => {
   res.json(mensajes);
 });
 
+app.post("/enviar", (req, res) => {
+  const { nombre, velocidad, direccion, altitud } = req.body;
+  if (!nombre) {
+    return res.status(400).json({ error: "Faltan datos" });
+  }
+
+  const participante = { 
+    nombre, 
+    velocidad: velocidad || 100, 
+    direccion: direccion || "Norte", 
+    altitud: altitud || 500 
+  };
+
+  mensajes.push(participante);
+
+  io.emit("nuevo-participante", participante); // por si luego quieres sockets
+  res.json({ ok: true });
+});
+
 server.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
+
 
 
