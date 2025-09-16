@@ -22,7 +22,7 @@ io.on("connection", (socket) => {
   console.log("Nuevo participante conectado:", socket.id);
 
   socket.on("join", ({ userName }) => {
-    console.log(`Se unió: ${nombre}`);
+    console.log(`Se unió: ${userName}`);
     io.emit("nuevo-participante", { userName });
   });
 
@@ -64,6 +64,7 @@ app.post("/enviar", (req, res) => {
 server.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
+
 
 
 
