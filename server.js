@@ -21,15 +21,15 @@ let mensajes = [];
 io.on("connection", (socket) => {
   console.log("Nuevo participante conectado:", socket.id);
 
-  socket.on("join", ({ nombre }) => {
+  socket.on("join", ({ userName }) => {
     console.log(`Se unió: ${nombre}`);
-    io.emit("nuevo-participante", { nombre });
+    io.emit("nuevo-participante", { userName });
   });
 
-  socket.on("mensaje", ({ nombre, texto }) => {
-    console.log(`Mensaje de ${nombre}: ${texto}`);
-    mensajes.push({ nombre, texto }); // Guardamos para polling
-    io.emit("nuevo-mensaje", { nombre, texto });
+  socket.on("mensaje", ({ userName, texto }) => {
+    console.log(`Mensaje de ${userName}: ${texto}`);
+    mensajes.push({ userName, texto }); // Guardamos para polling
+    io.emit("nuevo-mensaje", { userName, texto });
   });
 
   socket.on("disconnect", () => {
@@ -44,7 +44,7 @@ app.get("/mensajes", (req, res) => {
 
 app.post("/enviar", (req, res) => {
   const { userName, userVelocity, userDirection, userAltitud } = req.body;
-  if (!nombre) {
+  if (!userName) {
     return res.status(400).json({ error: "Faltan datos" });
   }
 
@@ -64,6 +64,7 @@ app.post("/enviar", (req, res) => {
 server.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
+
 
 
 
