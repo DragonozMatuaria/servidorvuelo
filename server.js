@@ -43,16 +43,16 @@ app.get("/mensajes", (req, res) => {
 });
 
 app.post("/enviar", (req, res) => {
-  const { nombre, velocidad, direccion, altitud } = req.body;
+  const { userName, userVelocity, userDirection, userAltitud } = req.body;
   if (!nombre) {
     return res.status(400).json({ error: "Faltan datos" });
   }
 
   const participante = { 
-    nombre, 
-    velocidad: velocidad || 100, 
-    direccion: direccion || "Norte", 
-    altitud: altitud || 500 
+    userName, 
+    userVelocity: userVelocity || 100, 
+    userDirection: userDirection || 0, 
+    userAltitud: userAltitud || 500 
   };
 
   mensajes.push(participante);
@@ -64,6 +64,7 @@ app.post("/enviar", (req, res) => {
 server.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
+
 
 
 
