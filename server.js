@@ -16,7 +16,7 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-let mensajes = [];
+let usuarios = {};
 
 io.on("connection", (socket) => {
   console.log("Nuevo participante conectado:", socket.id);
@@ -39,31 +39,37 @@ io.on("connection", (socket) => {
 
 // Endpoint para Unity (HTTP polling)
 app.get("/mensajes", (req, res) => {
-  res.json(mensajes);
+  const listaUsuarios = Object.values(usuarios);
+  res.json(listaUsuarios);
 });
+
 
 app.post("/enviar", (req, res) => {
   const { userName, userVelocity, userDirection, userAltitud } = req.body;
+
   if (!userName) {
-    return res.status(400).json({ error: "Faltan datos" });
+    return res.status(400).json({ error: "Faltan datos: userName es obligatorio" });
   }
 
-  const participante = { 
-    userName, 
-    userVelocity: userVelocity || 100, 
-    userDirection: userDirection || 0, 
-    userAltitud: userAltitud || 500 
+  const participante = {
+    userName,
+    userVelocity: userVelocity || "100",
+    userDirection: userDirection || "0",
+    userAltitud: userAltitud || "500"
   };
 
-  mensajes.push(participante);
+  // Actualiza o crea el usuario
+  usuarios[userName] = participante;
 
-  io.emit("nuevo-participante", participante); // por si luego quieres sockets
+  io.emit("nuevo-participante", participante);
   res.json({ ok: true });
 });
+
 
 server.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
+
 
 
 
