@@ -86,6 +86,3 @@ app.post("/eliminar", (req, res) => {
 server.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
-
-
-
