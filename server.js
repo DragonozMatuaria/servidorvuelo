@@ -17,20 +17,22 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3000;
 let usuarios = {};           // socket.id → datos del usuario
-let mensajes = [];           // historial de mensajes opcional
+let mensajes = [];           // historial opcional
 
 io.on("connection", (socket) => {
   console.log("🟢 Conectado:", socket.id);
 
   socket.on("join", ({ userName }) => {
     console.log(`Se unió: ${userName}`);
+
     usuarios[socket.id] = {
       userName,
-      userID: socket.id, // usamos socket.id como identificador único
+      userID: socket.id,
       userVelocity: "100",
       userDirection: "0",
       userAltitud: "500"
     };
+
     io.emit("nuevo-participante", usuarios[socket.id]);
   });
 
@@ -68,7 +70,7 @@ app.get("/mensajes", (req, res) => {
   res.json(listaUsuarios);
 });
 
-// Alternativa HTTP para actualizar desde Unity
+// ⚠️ Este endpoint no debe sobrescribir usuarios[socket.id] si no viene del socket
 app.post("/enviar", (req, res) => {
   const { userName, userID, userVelocity, userDirection, userAltitud } = req.body;
 
@@ -76,15 +78,14 @@ app.post("/enviar", (req, res) => {
     return res.status(400).json({ error: "Faltan datos: userID y userName son obligatorios" });
   }
 
-  usuarios[userID] = {
-    userName,
-    userID,
-    userVelocity: userVelocity || "100",
-    userDirection: userDirection || "0",
-    userAltitud: userAltitud || "500"
-  };
+  // Solo actualiza si el userID coincide con un socket activo
+  if (usuarios[userID]) {
+    usuarios[userID].userVelocity = userVelocity || "100";
+    usuarios[userID].userDirection = userDirection || "0";
+    usuarios[userID].userAltitud = userAltitud || "500";
+    io.emit("nuevo-participante", usuarios[userID]);
+  }
 
-  io.emit("nuevo-participante", usuarios[userID]);
   res.json({ ok: true });
 });
 
