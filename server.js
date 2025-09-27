@@ -25,6 +25,7 @@ io.on("connection", (socket) => {
   let currentUser = null;
 
   socket.on("join", ({ userName }) => {
+    console.log(`Se unió: ${userName}`);
     currentUser = userName;
     io.emit("nuevo-participante", { userName });
   });
@@ -85,5 +86,6 @@ app.post("/eliminar", (req, res) => {
 server.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
+
 
 
