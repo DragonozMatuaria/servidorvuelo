@@ -21,19 +21,27 @@ let usuarios = {};
 io.on("connection", (socket) => {
   console.log("Nuevo participante conectado:", socket.id);
 
+  // Guardar el userName relacionado con este socket
+  let currentUser = null;
+
   socket.on("join", ({ userName }) => {
     console.log(`Se unió: ${userName}`);
+    currentUser = userName;
+    usuarios[userName] = usuarios[userName] || { userName }; 
     io.emit("nuevo-participante", { userName });
   });
 
   socket.on("mensaje", ({ userName, texto }) => {
     console.log(`Mensaje de ${userName}: ${texto}`);
-    mensajes.push({ userName, texto }); // Guardamos para polling
     io.emit("nuevo-mensaje", { userName, texto });
   });
 
   socket.on("disconnect", () => {
     console.log("Participante desconectado:", socket.id);
+    if (currentUser && usuarios[currentUser]) {
+      delete usuarios[currentUser];
+      io.emit("usuario-eliminado", { userName: currentUser });
+    }
   });
 });
 
@@ -43,7 +51,7 @@ app.get("/mensajes", (req, res) => {
   res.json(listaUsuarios);
 });
 
-
+// Endpoint para enviar datos
 app.post("/enviar", (req, res) => {
   const { userName, userID, userVelocity, userDirection, userAltitud } = req.body;
 
@@ -66,14 +74,16 @@ app.post("/enviar", (req, res) => {
   res.json({ ok: true });
 });
 
+// Endpoint para eliminar usuario
+app.post("/eliminar", (req, res) => {
+  const { userName } = req.body;
+  if (userName && usuarios[userName]) {
+    delete usuarios[userName];
+    io.emit("usuario-eliminado", { userName });
+  }
+  res.json({ ok: true });
+});
 
 server.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
-
-
-
-
-
-
-
