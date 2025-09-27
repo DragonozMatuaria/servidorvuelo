@@ -16,75 +16,67 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-let usuarios = {};
+let usuarios = {}; // clave: userID
 
 io.on("connection", (socket) => {
   console.log("Nuevo participante conectado:", socket.id);
 
-  // Guardar el userName relacionado con este socket
-  let currentUser = null;
+  // Guardar el userID temporal de este socket
+  let currentUserID = null;
 
-  socket.on("join", ({ userID }) => {
-    console.log(`Se unió: ${userID}`);
-    currentUser = userID;
-    io.emit("nuevo-participante", { userID });
-  });
-
-  socket.on("mensaje", ({ userName, texto }) => {
-    console.log(`Mensaje de ${userName}: ${texto}`);
-    io.emit("nuevo-mensaje", { userName, texto });
+  socket.on("join", ({ userID, userName }) => {
+    console.log(`Conexión establecida: ${userName} (${userID})`);
+    currentUserID = userID;
+    // NO agregar al array aún
   });
 
   socket.on("disconnect", () => {
     console.log("Participante desconectado:", socket.id);
-    if (currentUser && usuarios[currentUser]) {
-      delete usuarios[currentUser];
-      io.emit("usuario-eliminado", { userName: currentUser });
+    if (currentUserID && usuarios[currentUserID]) {
+      delete usuarios[currentUserID];
+      io.emit("usuario-eliminado", { userID: currentUserID });
     }
   });
 });
 
-// Endpoint para Unity (HTTP polling)
-app.get("/mensajes", (req, res) => {
-  const listaUsuarios = Object.values(usuarios);
-  res.json(listaUsuarios);
-});
-
-// Endpoint para enviar datos
+// Endpoint para enviar datos desde el formulario
 app.post("/enviar", (req, res) => {
-  const { userName, userID, userVelocity, userDirection, userAltitud } = req.body;
+  const { userID, userName, userVelocity, userDirection, userAltitud } = req.body;
 
-  if (!userName) {
-    return res.status(400).json({ error: "Faltan datos: userName es obligatorio" });
+  if (!userID || !userVelocity || !userDirection || !userAltitud) {
+    return res.status(400).json({ error: "Faltan datos obligatorios" });
   }
 
   const participante = {
+    userID,
     userName,
-    userID: userID || "0",
-    userVelocity: userVelocity || "100",
-    userDirection: userDirection || "0",
-    userAltitud: userAltitud || "500"
+    userVelocity,
+    userDirection,
+    userAltitud
   };
 
-  // Actualiza o crea el usuario
-  usuarios[userName] = participante;
-
+  // Ahora sí agregamos/actualizamos al usuario
+  usuarios[userID] = participante;
   io.emit("nuevo-participante", participante);
+
   res.json({ ok: true });
 });
 
 // Endpoint para eliminar usuario
 app.post("/eliminar", (req, res) => {
-  const { userName } = req.body;
-  if (userName && usuarios[userName]) {
-    delete usuarios[userName];
-    io.emit("usuario-eliminado", { userName });
+  const { userID } = req.body;
+  if (userID && usuarios[userID]) {
+    delete usuarios[userID];
+    io.emit("usuario-eliminado", { userID });
   }
   res.json({ ok: true });
+});
+
+// Endpoint de polling para Unity
+app.get("/mensajes", (req, res) => {
+  res.json(Object.values(usuarios));
 });
 
 server.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
-
-
