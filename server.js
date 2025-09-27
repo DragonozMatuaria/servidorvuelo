@@ -16,24 +16,36 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-let usuarios = {};
+let usuarios = {};           // userID → datos del usuario
+let conexiones = {};         // socket.id → userID
+let mensajes = [];           // historial de mensajes opcional
 
 io.on("connection", (socket) => {
-  console.log("Nuevo participante conectado:", socket.id);
+  console.log("🟢 Conectado:", socket.id);
 
-  socket.on("join", ({ userName }) => {
-    console.log(`Se unió: ${userName}`);
-    io.emit("nuevo-participante", { userName });
+  socket.on("join", ({ userID }) => {
+    console.log(`Se unió: ${userID}`);
+    conexiones[socket.id] = userID;
+    io.emit("nuevo-participante", { userID });
   });
 
-  socket.on("mensaje", ({ userName, texto }) => {
-    console.log(`Mensaje de ${userName}: ${texto}`);
-    mensajes.push({ userName, texto }); // Guardamos para polling
-    io.emit("nuevo-mensaje", { userName, texto });
+  socket.on("mensaje", ({ userID, texto }) => {
+    console.log(`Mensaje de ${userID}: ${texto}`);
+    mensajes.push({ userID, texto });
+    io.emit("nuevo-mensaje", { userID, texto });
   });
 
   socket.on("disconnect", () => {
-    console.log("Participante desconectado:", socket.id);
+    const userID = conexiones[socket.id];
+    console.log("🔴 Desconectado:", socket.id, userID);
+
+    if (userID && usuarios[userID]) {
+      delete usuarios[userID];
+      console.log(`🧹 Eliminado usuario ${userID}`);
+      io.emit("usuario-desconectado", { userID });
+    }
+
+    delete conexiones[socket.id];
   });
 });
 
@@ -43,32 +55,29 @@ app.get("/mensajes", (req, res) => {
   res.json(listaUsuarios);
 });
 
-
 app.post("/enviar", (req, res) => {
   const { userName, userID, userVelocity, userDirection, userAltitud } = req.body;
 
-  if (!userName) {
-    return res.status(400).json({ error: "Faltan datos: userName es obligatorio" });
+  if (!userID || !userName) {
+    return res.status(400).json({ error: "Faltan datos: userID y userName son obligatorios" });
   }
 
   const participante = {
     userName,
-    userID: userID || "0",
+    userID,
     userVelocity: userVelocity || "100",
     userDirection: userDirection || "0",
     userAltitud: userAltitud || "500"
   };
 
-  // Actualiza o crea el usuario
-  usuarios[userName] = participante;
+  usuarios[userID] = participante;
 
   io.emit("nuevo-participante", participante);
   res.json({ ok: true });
 });
 
-
 server.listen(PORT, () => {
-  console.log(`Servidor escuchando en puerto ${PORT}`);
+  console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
 });
 
 
