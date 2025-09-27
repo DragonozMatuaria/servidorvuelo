@@ -45,7 +45,7 @@ app.get("/mensajes", (req, res) => {
 
 
 app.post("/enviar", (req, res) => {
-  const { userName, userVelocity, userDirection, userAltitud } = req.body;
+  const { userName, userID, userVelocity, userDirection, userAltitud } = req.body;
 
   if (!userName) {
     return res.status(400).json({ error: "Faltan datos: userName es obligatorio" });
@@ -53,6 +53,7 @@ app.post("/enviar", (req, res) => {
 
   const participante = {
     userName,
+    userID: userID || "0",
     userVelocity: userVelocity || "100",
     userDirection: userDirection || "0",
     userAltitud: userAltitud || "500"
@@ -69,6 +70,7 @@ app.post("/enviar", (req, res) => {
 server.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
+
 
 
 
