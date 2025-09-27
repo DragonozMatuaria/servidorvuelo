@@ -16,36 +16,49 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-let usuarios = {};           // userID → datos del usuario
-let conexiones = {};         // socket.id → userID
+let usuarios = {};           // socket.id → datos del usuario
 let mensajes = [];           // historial de mensajes opcional
 
 io.on("connection", (socket) => {
   console.log("🟢 Conectado:", socket.id);
 
-  socket.on("join", ({ userID }) => {
-    console.log(`Se unió: ${userID}`);
-    conexiones[socket.id] = userID;
-    io.emit("nuevo-participante", { userID });
+  socket.on("join", ({ userName }) => {
+    console.log(`Se unió: ${userName}`);
+    usuarios[socket.id] = {
+      userName,
+      userID: socket.id, // usamos socket.id como identificador único
+      userVelocity: "100",
+      userDirection: "0",
+      userAltitud: "500"
+    };
+    io.emit("nuevo-participante", usuarios[socket.id]);
   });
 
-  socket.on("mensaje", ({ userID, texto }) => {
-    console.log(`Mensaje de ${userID}: ${texto}`);
-    mensajes.push({ userID, texto });
-    io.emit("nuevo-mensaje", { userID, texto });
+  socket.on("mensaje", ({ texto }) => {
+    const user = usuarios[socket.id];
+    if (user) {
+      console.log(`Mensaje de ${user.userName}: ${texto}`);
+      mensajes.push({ userName: user.userName, texto });
+      io.emit("nuevo-mensaje", { userName: user.userName, texto });
+    }
+  });
+
+  socket.on("actualizar", ({ userVelocity, userDirection, userAltitud }) => {
+    if (usuarios[socket.id]) {
+      usuarios[socket.id].userVelocity = userVelocity || "100";
+      usuarios[socket.id].userDirection = userDirection || "0";
+      usuarios[socket.id].userAltitud = userAltitud || "500";
+      io.emit("nuevo-participante", usuarios[socket.id]);
+    }
   });
 
   socket.on("disconnect", () => {
-    const userID = conexiones[socket.id];
-    console.log("🔴 Desconectado:", socket.id, userID);
-
-    if (userID && usuarios[userID]) {
-      delete usuarios[userID];
-      console.log(`🧹 Eliminado usuario ${userID}`);
-      io.emit("usuario-desconectado", { userID });
+    const user = usuarios[socket.id];
+    if (user) {
+      console.log(`🔴 Desconectado: ${user.userName} (${socket.id})`);
+      delete usuarios[socket.id];
+      io.emit("usuario-desconectado", { userID: socket.id });
     }
-
-    delete conexiones[socket.id];
   });
 });
 
@@ -55,6 +68,7 @@ app.get("/mensajes", (req, res) => {
   res.json(listaUsuarios);
 });
 
+// Alternativa HTTP para actualizar desde Unity
 app.post("/enviar", (req, res) => {
   const { userName, userID, userVelocity, userDirection, userAltitud } = req.body;
 
@@ -62,7 +76,7 @@ app.post("/enviar", (req, res) => {
     return res.status(400).json({ error: "Faltan datos: userID y userName son obligatorios" });
   }
 
-  const participante = {
+  usuarios[userID] = {
     userName,
     userID,
     userVelocity: userVelocity || "100",
@@ -70,20 +84,10 @@ app.post("/enviar", (req, res) => {
     userAltitud: userAltitud || "500"
   };
 
-  usuarios[userID] = participante;
-
-  io.emit("nuevo-participante", participante);
+  io.emit("nuevo-participante", usuarios[userID]);
   res.json({ ok: true });
 });
 
 server.listen(PORT, () => {
   console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
 });
-
-
-
-
-
-
-
-
