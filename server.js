@@ -24,10 +24,10 @@ io.on("connection", (socket) => {
   // Guardar el userName relacionado con este socket
   let currentUser = null;
 
-  socket.on("join", ({ userName }) => {
-    console.log(`Se unió: ${userName}`);
+  socket.on("join", ({ userID }) => {
+    console.log(`Se unió: ${userID}`);
     currentUser = userID;
-    io.emit("nuevo-participante", { userName });
+    io.emit("nuevo-participante", { userID });
   });
 
   socket.on("mensaje", ({ userName, texto }) => {
@@ -86,4 +86,5 @@ app.post("/eliminar", (req, res) => {
 server.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
 });
+
 
